@@ -1,0 +1,220 @@
+--==================================================
+-- ✦ APOSTOLES DE DIDDY ✦
+-- FPS BOOSTER
+-- Roblox Studio - LocalScript
+--==================================================
+
+local Players = game:GetService("Players")
+local UIS = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local Lighting = game:GetService("Lighting")
+local Stats = game:GetService("Stats")
+
+local Player = Players.LocalPlayer
+local PlayerGui = Player:WaitForChild("PlayerGui")
+
+-- CONFIG
+local PURPLE = Color3.fromRGB(125, 65, 190)
+local BLACK = Color3.fromRGB(15, 15, 20)
+local WHITE = Color3.fromRGB(255, 255, 255)
+
+local BOOST = false
+local LOW_GRAPHICS = false
+local SHOW_STATS = true
+
+-- GUI
+local Gui = Instance.new("ScreenGui")
+Gui.Name = "ApostolesDeDiddy"
+Gui.ResetOnSpawn = false
+Gui.Parent = PlayerGui
+
+local Main = Instance.new("Frame")
+Main.Size = UDim2.fromOffset(350, 410)
+Main.Position = UDim2.new(0.5, -175, 0.5, -205)
+Main.BackgroundColor3 = BLACK
+Main.BorderSizePixel = 0
+Main.Parent = Gui
+
+Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 12)
+
+local Stroke = Instance.new("UIStroke")
+Stroke.Color = PURPLE
+Stroke.Thickness = 2
+Stroke.Parent = Main
+
+-- TITLE
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, 0, 0, 55)
+Title.BackgroundTransparency = 1
+Title.Text = "✦ APOSTOLES DE DIDDY ✦"
+Title.TextColor3 = WHITE
+Title.TextSize = 19
+Title.Font = Enum.Font.GothamBold
+Title.Parent = Main
+
+local Subtitle = Instance.new("TextLabel")
+Subtitle.Size = UDim2.new(1, 0, 0, 25)
+Subtitle.Position = UDim2.fromOffset(0, 48)
+Subtitle.BackgroundTransparency = 1
+Subtitle.Text = "FPS BOOSTER | PERFORMANCE"
+Subtitle.TextColor3 = PURPLE
+Subtitle.TextSize = 11
+Subtitle.Font = Enum.Font.GothamBold
+Subtitle.Parent = Main
+
+-- BUTTON CREATOR
+local function CreateButton(text, y, callback)
+    local Button = Instance.new("TextButton")
+    Button.Size = UDim2.new(0.85, 0, 0, 42)
+    Button.Position = UDim2.new(0.075, 0, 0, y)
+    Button.BackgroundColor3 = Color3.fromRGB(35, 30, 45)
+    Button.Text = text
+    Button.TextColor3 = WHITE
+    Button.TextSize = 13
+    Button.Font = Enum.Font.GothamBold
+    Button.AutoButtonColor = true
+    Button.Parent = Main
+
+    Instance.new("UICorner", Button).CornerRadius = UDim.new(0, 8)
+
+    Button.MouseButton1Click:Connect(callback)
+
+    return Button
+end
+
+-- FPS BOOST
+local BoostButton
+
+local function ToggleBoost()
+    BOOST = not BOOST
+
+    if BOOST then
+        settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
+        BoostButton.Text = "FPS BOOST: ON"
+        BoostButton.BackgroundColor3 = PURPLE
+    else
+        BoostButton.Text = "FPS BOOST: OFF"
+        BoostButton.BackgroundColor3 = Color3.fromRGB(35, 30, 45)
+    end
+end
+
+BoostButton = CreateButton("FPS BOOST: OFF", 90, ToggleBoost)
+
+-- LOW GRAPHICS
+local LowButton
+
+local function ToggleLowGraphics()
+    LOW_GRAPHICS = not LOW_GRAPHICS
+
+    if LOW_GRAPHICS then
+        Lighting.GlobalShadows = false
+        LowButton.Text = "LOW GRAPHICS: ON"
+        LowButton.BackgroundColor3 = PURPLE
+    else
+        Lighting.GlobalShadows = true
+        LowButton.Text = "LOW GRAPHICS: OFF"
+        LowButton.BackgroundColor3 = Color3.fromRGB(35, 30, 45)
+    end
+end
+
+LowButton = CreateButton("LOW GRAPHICS: OFF", 142, ToggleLowGraphics)
+
+-- FOG
+local FogButton
+
+local function ToggleFog()
+    local enabled = Lighting.FogEnd < 100000
+
+    if enabled then
+        Lighting.FogEnd = 100000
+        Lighting.FogStart = 0
+        FogButton.Text = "REMOVE FOG: ON"
+    else
+        Lighting.FogEnd = 1000
+        Lighting.FogStart = 0
+        FogButton.Text = "REMOVE FOG: OFF"
+    end
+end
+
+FogButton = CreateButton("REMOVE FOG", 194, ToggleFog)
+
+-- PARTICLES
+local ParticlesButton
+local ParticlesDisabled = false
+
+local function ToggleParticles()
+    ParticlesDisabled = not ParticlesDisabled
+
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if obj:IsA("ParticleEmitter")
+        or obj:IsA("Trail")
+        or obj:IsA("Beam") then
+            obj.Enabled = not ParticlesDisabled
+        end
+    end
+
+    ParticlesButton.Text = ParticlesDisabled
+        and "PARTICLES: OFF"
+        or "PARTICLES: ON"
+end
+
+ParticlesButton = CreateButton("PARTICLES: ON", 246, ToggleParticles)
+
+-- STATS
+local StatsLabel = Instance.new("TextLabel")
+StatsLabel.Size = UDim2.new(1, 0, 0, 45)
+StatsLabel.Position = UDim2.fromOffset(0, 305)
+StatsLabel.BackgroundTransparency = 1
+StatsLabel.TextColor3 = WHITE
+StatsLabel.TextSize = 13
+StatsLabel.Font = Enum.Font.GothamBold
+StatsLabel.Text = "FPS: Calculating...\nPING: Calculating..."
+StatsLabel.Parent = Main
+
+local StatsButton = CreateButton("SHOW/HIDE STATS", 355, function()
+    SHOW_STATS = not SHOW_STATS
+    StatsLabel.Visible = SHOW_STATS
+end)
+
+-- FPS COUNTER
+local Frames = 0
+local LastUpdate = tick()
+
+RunService.RenderStepped:Connect(function()
+    Frames += 1
+
+    if tick() - LastUpdate >= 1 then
+        local FPS = Frames
+        Frames = 0
+        LastUpdate = tick()
+
+        local Ping = 0
+
+        pcall(function()
+            Ping = Stats.Network.ServerStatsItem["Data Ping"]:GetValue()
+        end)
+
+        StatsLabel.Text = "FPS: " .. FPS .. "\nPING: " .. math.floor(Ping) .. " ms"
+    end
+end)
+
+-- KEYBINDS
+UIS.InputBegan:Connect(function(input, processed)
+    if processed then return end
+
+    if input.KeyCode == Enum.KeyCode.RightShift then
+        Main.Visible = not Main.Visible
+
+    elseif input.KeyCode == Enum.KeyCode.F then
+        ToggleBoost()
+
+    elseif input.KeyCode == Enum.KeyCode.G then
+        ToggleLowGraphics()
+
+    elseif input.KeyCode == Enum.KeyCode.P then
+        SHOW_STATS = not SHOW_STATS
+        StatsLabel.Visible = SHOW_STATS
+    end
+end)
+
+print("✦ APOSTOLES DE DIDDY FPS BOOSTER ACTIVATED ✦")
